@@ -16,6 +16,10 @@ retro_star/one_step_model/
 retro_star/saved_models/
 retro_star/retro_data.zip
 
+# Editor
+.history
+.vscode
+
 # Environments
 .env
 .venv
