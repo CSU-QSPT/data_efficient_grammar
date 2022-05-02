@@ -1,3 +1,4 @@
+from tkinter import ALL
 from rdkit import Chem
 from copy import deepcopy
 import numpy as np
@@ -17,8 +18,9 @@ import argparse
 import fcntl
 from retro_star_listener import lock
 
+ALL_METRICS = ('diversity', 'num_rules', 'num_samples', 'syn')
 
-def evaluate(grammar, args, metrics=['diversity', 'syn']):
+def evaluate(grammar, args, metrics):
     # Metric evalution for the given gramamr
     div = InternalDiversity()
     eval_metrics = {}
@@ -47,7 +49,7 @@ def evaluate(grammar, args, metrics=['diversity', 'syn']):
             break
 
     for _metric in metrics:
-        assert _metric in ['diversity', 'num_rules', 'num_samples', 'syn']
+        assert _metric in ALL_METRICS
         if _metric == 'diversity':
             diversity = div.get_diversity(generated_samples)
             eval_metrics[_metric] = diversity
@@ -102,6 +104,14 @@ def learn(smiles_list, args):
     logger.info('args:{}'.format(pprint.pformat(args)))
     logger = logging.getLogger('global_logger')
 
+    # parse weights of metrics
+    metrics_map = {'diversity'  : args.wt_diversity,
+                   'num_rules'  : args.wt_num_rules,
+                   'num_samples': args.wt_num_samples,
+                   'syn'        : args.wt_syn}
+
+    metrics = [m for (m, wt) in metrics_map.items() if wt != 0]
+
     # Initialize dataset & potential function (agent) & optimizer
     subgraph_set_init, input_graphs_dict_init = data_processing(smiles_list, args.GNN_model_path, args.motif)
     agent = Agent(feat_dim=300, hidden_size=args.hidden_size)
@@ -127,10 +137,10 @@ def learn(smiles_list, args):
             l_grammar = deepcopy(grammar_init)
             iter_num, l_grammar, l_input_graphs_dict = MCMC_sampling(agent, l_input_graphs_dict, l_subgraph_set, l_grammar, num, args)
             # Grammar evaluation
-            eval_metric = evaluate(l_grammar, args, metrics=['diversity', 'syn'])
+            eval_metric = evaluate(l_grammar, args, metrics)
             logger.info("eval_metrics: {}".format(eval_metric))
             # Record metrics
-            R = eval_metric['diversity'] + 2 * eval_metric['syn']
+            R = np.sum([metrics_map[m] * eval_metric[m] for m in metrics])
             R_ind = R.copy()
             returns.append(R)
             log_returns.append(eval_metric)
@@ -143,7 +153,7 @@ def learn(smiles_list, args):
                 with open('{}/epoch_input_graphs_{}_{}.pkl'.format(save_log_path, train_epoch, R_ind), 'wb') as outp:
                     pickle.dump(l_input_graphs_dict, outp, pickle.HIGHEST_PROTOCOL)
                 curr_max_R = R_ind
-        
+
         # Calculate loss
         returns = torch.tensor(returns)
         returns = (returns - returns.mean()) # / (returns.std() + eps)
@@ -189,6 +199,10 @@ if __name__ == '__main__':
     parser.add_argument('--receiver_file', type=str, default="output_syn.txt", help="file name of the output file of Retro*")
     parser.add_argument('--resume', action="store_true", default=False, help="resume model")
     parser.add_argument('--resume_path', type=str, default='', help="resume path")
+    parser.add_argument('--wt_diversity', type=int, default=1, help="weight of 'diversity' metric")
+    parser.add_argument('--wt_num_rules', type=int, default=0, help="weight of 'number of rules' metric")
+    parser.add_argument('--wt_num_samples', type=int, default=0, help="weight of 'number of samples' metric")
+    parser.add_argument('--wt_syn', type=int, default=0, help="weight of 'synthesis feasibility' metric")
     args = parser.parse_args()
 
     # Get raw training data
@@ -206,7 +220,6 @@ if __name__ == '__main__':
         fw.write('')
     with open(args.receiver_file, 'w') as fw:
         fw.write('')
-    
+
     # Grammar learning
     learn(mol_sml, args)
-
