@@ -112,7 +112,8 @@ def learn(smiles_list, args):
     metrics_map = {'diversity'  : args.wt_diversity,
                    'num_rules'  : args.wt_num_rules,
                    'num_samples': args.wt_num_samples,
-                   'syn'        : args.wt_syn}
+                   'syn'        : args.wt_syn,
+                   'qsar'       : args.wt_qsar}
 
     metrics = [m for (m, wt) in metrics_map.items() if wt != 0]
 
@@ -128,10 +129,10 @@ def learn(smiles_list, args):
     # Start training
     logger.info('starting\n')
     curr_max_R = 0
-    for train_epoch in range(args.max_epoches):
+    for train_epoch in range(args.max_epochs):
         returns = []
         log_returns = []
-        logger.info("<<<<< Epoch {}/{} >>>>>>".format(train_epoch, args.max_epoches))
+        logger.info("<<<<< Epoch {}/{} >>>>>>".format(train_epoch, args.max_epochs))
 
         # MCMC sampling
         for num in range(args.MCMC_size):
@@ -193,7 +194,7 @@ if __name__ == '__main__':
     parser.add_argument('--training_data', type=str, default="./datasets/isocyanates.txt", help="file name of the training data")
     parser.add_argument('--GNN_model_path', type=str, default="./GCN/model_gin/supervised_contextpred.pth", help="file name of the pretrained GNN model")
     parser.add_argument('--hidden_size', type=int, default=128, help="hidden size of the potential function")
-    parser.add_argument('--max_epoches', type=int, default=50, help="maximal training epoches")
+    parser.add_argument('--max_epochs', type=int, default=50, help="maximal training epochs")
     parser.add_argument('--num_generated_samples', type=int, default=100, help="number of generated samples to evaluate grammar")
     parser.add_argument('--MCMC_size', type=int, default=5, help="sample number of each step of MCMC")
     parser.add_argument('--learning_rate', type=int, default=1e-2, help="learning rate")
