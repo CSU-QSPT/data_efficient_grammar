@@ -17,8 +17,10 @@ import pickle
 import argparse
 import fcntl
 from retro_star_listener import lock
+from qsars.compute import qsar
+from qsars.compute import SUPPORTED_QSAR_TYPES
 
-ALL_METRICS = ('diversity', 'num_rules', 'num_samples', 'syn')
+ALL_METRICS = ('diversity', 'num_rules', 'num_samples', 'syn', 'qsar')
 
 def evaluate(grammar, args, metrics):
     # Metric evalution for the given gramamr
@@ -59,6 +61,8 @@ def evaluate(grammar, args, metrics):
             eval_metrics[_metric] = idx
         elif _metric == 'syn':
             eval_metrics[_metric] = retro_sender(generated_samples, args)
+        elif _metric == 'qsar':
+            eval_metrics[_metric] = qsar(generated_samples, args.qsar_type)
         else:
             raise NotImplementedError
     return eval_metrics
@@ -203,7 +207,12 @@ if __name__ == '__main__':
     parser.add_argument('--wt_num_rules', type=int, default=0, help="weight of 'number of rules' metric")
     parser.add_argument('--wt_num_samples', type=int, default=0, help="weight of 'number of samples' metric")
     parser.add_argument('--wt_syn', type=int, default=0, help="weight of 'synthesis feasibility' metric")
+    parser.add_argument('--wt_qsar', type=int, default=2, help="weight of qsar metric")
+    parser.add_argument('--qsar_type', type=str, choices=SUPPORTED_QSAR_TYPES, help="type of qsar")
     args = parser.parse_args()
+    # special cases
+    if (args.wt_qsar != 0) and (args.qsar_type is None):
+        parser.error("If --wt_qsar is nonzero, a value for --qsar_type must be specified.")
 
     # Get raw training data
     assert os.path.exists(args.training_data), "Please provide valid path of training data."
