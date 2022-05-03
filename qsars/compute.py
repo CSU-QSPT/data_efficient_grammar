@@ -3,11 +3,6 @@ from rdkit import DataStructs, Chem
 from rdkit.Chem import AllChem
 import numpy as np
 
-QSAR_MAPPING = {'logP': _logP,
-                'another_qsar': _another_qsar}
-
-SUPPORTED_QSAR_TYPES = list(QSAR_MAPPING.keys())
-
 def qsar(generated_samples, qsar_type):
     if qsar_type not in SUPPORTED_QSAR_TYPES:
         qtypes = ', '.join(f"'{q}'" for q in SUPPORTED_QSAR_TYPES)
@@ -22,3 +17,12 @@ def _logP(generated_samples):
 def _another_qsar(generated_samples):
     score = np.random.rand()
     return score
+
+#------------------------------------------------------------------------------
+# UPDATE THESE AS FUNCTIONS ARE ADDED
+#------------------------------------------------------------------------------
+
+QSAR_MAPPING = {'logP': _logP,
+                'another_qsar': _another_qsar}
+
+SUPPORTED_QSAR_TYPES = list(QSAR_MAPPING.keys())
